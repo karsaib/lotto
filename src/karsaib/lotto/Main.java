@@ -7,7 +7,7 @@ import java.util.*;
 public class Main {
     public static void main(String[] args) {
         if (args.length < 2) {
-            System.out.println("Használat: java -jar main.jar [9|6] filenev.csv");
+            System.out.println("Használat: java -jar main.jar [9|6|7] filenev.csv");
             return;
         }
 
@@ -20,8 +20,10 @@ public class Main {
                 processFile(fileName, 90, 5);
             } else if (mode.equals("6")) {
                 processFile(fileName, 45, 6);
+            } else if (mode.equals("7")) {
+                processFile(fileName, 45, 14);
             } else {
-                System.out.println("Érvénytelen mód. Használj '9' (1..90, 5 szám soronként) vagy '6' (1..45, 6 szám soronként).");
+                System.out.println("Érvénytelen mód. Használj '9' (1..90, 5 szám soronként), '6' (1..45, 6 szám soronként), vagy '7' (1..45, 14 szám soronként).");
             }
         } catch (IOException e) {
             System.out.println("Hiba történt: " + e.getMessage());
@@ -137,4 +139,3 @@ public class Main {
         return weightedAverages;
     }
 }
-
