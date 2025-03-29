@@ -21,7 +21,7 @@ public class Main {
             } else if (mode.equals("6")) {
                 processFile(fileName, 45, 6);
             } else if (mode.equals("7")) {
-                processFile(fileName, 45, 14);
+                processFile(fileName, 35, 14);
             } else {
                 System.out.println("Érvénytelen mód. Használj '9' (1..90, 5 szám soronként), '6' (1..45, 6 szám soronként), vagy '7' (1..45, 14 szám soronként).");
             }
@@ -35,7 +35,7 @@ public class Main {
         int[][] numbers = readCsvTo2DArray(fileName, maxNumber, numbersPerRow);
 
         // Az összes sor száma
-        int totalRows = numbers.length;
+        int totalRows = numbers.length; 
 
         // Számosságok keresése
         Map<Integer, Integer> occurrences = countOccurrences(numbers, maxNumber);
@@ -47,10 +47,40 @@ public class Main {
         Map<Integer, Double> weightedAverages = calculateWeightedAverage(occurrences, adjustedFirstOccurrences, totalRows);
 
         // Eredmények kiírása
-        System.out.println("Számok súlyozott átlaga:");
-        weightedAverages.entrySet().stream()
+        System.out.println("executed..");
+        writeToHtml(weightedAverages,numbers,"result.html");
+    }
+    
+    public static void writeToHtml(Map<Integer, Double> weightedAverages, int[][] numbers, String filePath) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            writer.write("<html><head><title>Súlyozott Átlagok</title></head><body>");
+            
+            // Első sor első 5 számának kiírása
+            if (numbers.length > 0 && numbers[0].length >= 5) {
+                writer.write("<h2>Első sor első 5 száma:</h2><p>");
+                for (int i = 0; i < 5; i++) {
+                    writer.write(numbers[0][i] + " ");
+                }
+                writer.write("</p>");
+            }
+            
+            writer.write("<h2>Súlyozott Átlagok</h2><ul>");
+            
+            weightedAverages.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue())
-                .forEach(entry -> System.out.printf("Szám: %d -> Súlyozott átlag: %.2f%n", entry.getKey(), entry.getValue()));
+                .forEach(entry -> {
+                    try {
+                        writer.write(String.format("<li>Szám: %d -> Súlyozott átlag: %.2f</li>", 
+                                    entry.getKey(), entry.getValue()));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+            
+            writer.write("</ul></body></html>");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static int[][] readCsvTo2DArray(String fileName, int maxNumber, int numbersPerRow) throws IOException {
@@ -58,24 +88,24 @@ public class Main {
         List<String> lines = Files.readAllLines(Paths.get(fileName));
 
         for (String line : lines) {
-            // Tisztítás a BOM karakterektől és felesleges szóközöktől
             line = line.replace("\uFEFF", "").trim();
-
-            // Üres sorok kihagyása
             if (line.isEmpty()) {
                 continue;
             }
-
-            // Ha van felesleges vessző a sor végén, eltávolítjuk
             if (line.endsWith(",")) {
                 line = line.substring(0, line.length() - 1).trim();
             }
 
-            String[] stringNumbers = line.split(",");
+            String[] stringNumbers = line.split(";");
+            if (maxNumber == 90 && stringNumbers.length >= 12) {
+                stringNumbers = new String[]{stringNumbers[11], stringNumbers[12], stringNumbers[13], stringNumbers[14], stringNumbers[15]};
+               
+            }
+            
             if (stringNumbers.length != numbersPerRow) {
                 throw new IOException("A sor nem pontosan " + numbersPerRow + " számot tartalmaz: " + line);
             }
-
+            
             int[] row = new int[numbersPerRow];
             for (int i = 0; i < stringNumbers.length; i++) {
                 try {
@@ -87,10 +117,8 @@ public class Main {
                     throw new IOException("Érvénytelen szám található a sorban: '" + stringNumbers[i] + "' a sor: " + line);
                 }
             }
-
             rows.add(row);
         }
-
         return rows.toArray(new int[0][0]);
     }
 
@@ -131,7 +159,7 @@ public class Main {
             int firstOccurrenceValue = adjustedFirstOccurrences.getOrDefault(num, 0);
 
             double weightedAverage = ((double) occurrenceValue / maxOccurrences) * 0.5
-                                    + ((double) firstOccurrenceValue / maxAdjustedFirst) * 0.5;
+                                    + ((double) totalRows-firstOccurrenceValue / maxAdjustedFirst) * 0.5;
 
             weightedAverages.put(num, weightedAverage);
         }
