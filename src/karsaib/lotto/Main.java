@@ -3,7 +3,9 @@ package karsaib.lotto;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-
+/*Lotto statistical generator
+ * Author Barna Karsai
+ */
 public class Main {
     public static void main(String[] args) {
         if (args.length < 2) {
@@ -29,7 +31,7 @@ public class Main {
             System.out.println("Hiba történt: " + e.getMessage());
         }
     }
-
+//Read lotto number export from CSV
     private static void processFile(String fileName, int maxNumber, int numbersPerRow) throws IOException {
         // A fájl tartalmának beolvasása és kétdimenziós tömbbe helyezése
         int[][] numbers = readCsvTo2DArray(fileName, maxNumber, numbersPerRow);
@@ -47,10 +49,10 @@ public class Main {
         Map<Integer, Double> weightedAverages = calculateWeightedAverage(occurrences, adjustedFirstOccurrences, totalRows);
 
         // Eredmények kiírása
-        System.out.println("executed..");
+        System.out.println("Finished, report is created..");
         writeToHtml(weightedAverages,numbers,"result.html");
     }
-    
+    //Write statistics to Html file
     public static void writeToHtml(Map<Integer, Double> weightedAverages, int[][] numbers, String filePath) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             writer.write("<html><head><title>Súlyozott Átlagok</title></head><body>");
@@ -82,7 +84,7 @@ public class Main {
             e.printStackTrace();
         }
     }
-
+//File content reader
     private static int[][] readCsvTo2DArray(String fileName, int maxNumber, int numbersPerRow) throws IOException {
         List<int[]> rows = new ArrayList<>();
         List<String> lines = Files.readAllLines(Paths.get(fileName));
@@ -96,7 +98,7 @@ public class Main {
                 line = line.substring(0, line.length() - 1).trim();
             }
 
-            String[] stringNumbers = line.split(";");
+            String[] stringNumbers = line.split(",");
             if (maxNumber == 90 && stringNumbers.length >= 12) {
                 stringNumbers = new String[]{stringNumbers[11], stringNumbers[12], stringNumbers[13], stringNumbers[14], stringNumbers[15]};
                
@@ -121,7 +123,7 @@ public class Main {
         }
         return rows.toArray(new int[0][0]);
     }
-
+//Summ of occurence, small value is higher priority
     private static Map<Integer, Integer> countOccurrences(int[][] numbers, int maxNumber) {
         Map<Integer, Integer> occurrences = new HashMap<>();
         for (int[] row : numbers) {
@@ -131,7 +133,7 @@ public class Main {
         }
         return occurrences;
     }
-
+//Find the earliest draw, large(older) value is higher priority
     private static Map<Integer, Integer> findAdjustedFirstOccurrences(int[][] numbers, int totalRows, int maxNumber) {
         Map<Integer, Integer> firstOccurrences = new HashMap<>();
         for (int rowIndex = 0; rowIndex < numbers.length; rowIndex++) {
@@ -143,7 +145,7 @@ public class Main {
         }
         return firstOccurrences;
     }
-
+//Aggregate statistics
     private static Map<Integer, Double> calculateWeightedAverage(
         Map<Integer, Integer> occurrences,
         Map<Integer, Integer> adjustedFirstOccurrences,
