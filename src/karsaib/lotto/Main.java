@@ -12,7 +12,7 @@ public class Main {
 
     public static void main(String[] args) {
         if (args.length < 2) {
-            System.out.println("Use: java -jar lotto-1.jar [9|6|7] filenev.csv");
+            System.out.println("Use: java -jar lotto-1.jar [5|6|7] filenev.csv");
             return;
         }
 
@@ -20,7 +20,7 @@ public class Main {
         String fileName = args[1];
 
         try {
-            if (mode.equals("9")) {
+            if (mode.equals("5")) {
                 // 5/90
                 processFile(fileName, 90, 5);
             } else if (mode.equals("6")) {
@@ -68,9 +68,37 @@ public class Main {
             int sinceLast = (idx == null) ? totalRows : idx;
             sinceLastMap.put(num, sinceLast);
         }
+        
+        // cycleFactor = sinceLast / avgGap
+        Map<Integer, Double> cycleFactorMap = new HashMap<>();
+
+        for (int num : occurrences.keySet()) {
+
+            int sinceLast = sinceLastMap.getOrDefault(num, 0);
+
+            double avgGap = gapStats.avgGap.getOrDefault(
+                    num,
+                    (double) totalRows
+            );
+
+            double cycleFactor;
+
+            if (avgGap <= 0.0) {
+                cycleFactor = 0.0;
+            } else {
+                cycleFactor = sinceLast / avgGap;
+            }
+
+            cycleFactorMap.put(num, cycleFactor);
+        }
 
         // Új score: occurrences + maxGap + sinceLast alapján
-        Map<Integer, Double> scores = calculateWeightedScore(occurrences, gapStats.maxGap, sinceLastMap);
+        Map<Integer, Double> scores = calculateWeightedScore(
+        occurrences,
+        gapStats.maxGap,
+        sinceLastMap,
+        cycleFactorMap
+        );
 
         System.out.println("Finished, report is created (result.html)..");
 
@@ -384,6 +412,7 @@ public class Main {
     private static Map<Integer, Integer> countOccurrences(int[][] numbers, int maxNumber) {
         Map<Integer, Integer> occurrences = new HashMap<>();
         for (int[] row : numbers) {
+        
             for (int num : row) {
                 occurrences.put(num, occurrences.getOrDefault(num, 0) + 1);
             }
@@ -395,15 +424,20 @@ public class Main {
     // Új score (occurrences + maxGap + sinceLast)
     // -------------------------------------------------------------------------
     private static Map<Integer, Double> calculateWeightedScore(
-            Map<Integer, Integer> occurrences,
-            Map<Integer, Integer> maxGaps,
-            Map<Integer, Integer> sinceLastMap
+        Map<Integer, Integer> occurrences,
+        Map<Integer, Integer> maxGaps,
+        Map<Integer, Integer> sinceLastMap,
+        Map<Integer, Double> cycleFactorMap
     ) {
         Map<Integer, Double> scores = new HashMap<>();
 
         int maxOcc = occurrences.values().stream().max(Integer::compare).orElse(1);
         int maxGap = maxGaps.values().stream().max(Integer::compare).orElse(1);
         int maxSince = sinceLastMap.values().stream().max(Integer::compare).orElse(1);
+        double maxCycle = cycleFactorMap.values()
+        .stream()
+        .max(Double::compare)
+        .orElse(1.0);
 
         for (int num : occurrences.keySet()) {
             int occ = occurrences.getOrDefault(num, 0);
@@ -413,11 +447,16 @@ public class Main {
             double normOcc = (double) occ / maxOcc;
             double normGap = (double) gap / maxGap;
             double normSince = (double) since / maxSince;
+            double cycle = cycleFactorMap.getOrDefault(num, 0.0);
+            double normCycle = cycle / maxCycle;
 
-            // mindhárom tényező 1/3 súllyal
-            double score = (normOcc + normGap + normSince) / 3.0;
-            scores.put(num, score);
-        }
+            double score =
+              normOcc * 0.25
+            + normGap * 0.20
+            + normSince * 0.25
+            + normCycle * 0.30;
+                scores.put(num, score);
+            }
 
         return scores;
     }
